@@ -1,0 +1,28 @@
+{
+  "name": "react-track-events",
+  "version": "0.0.0",
+  "description": "Track all events on an element",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test:example": "cd example && npm test -- --watchAll=false",
+    "test": "npm run build && npm run test:example"
+  },
+  "keywords": [],
+  "author": "Moshe Kolodny",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^17.0.19",
+    "react": "^17.0.2",
+    "typescript": "^4.3.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kolodny/react-track-events.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kolodny/react-track-events/issues"
+  },
+  "homepage": "https://github.com/kolodny/react-track-events#readme"
+}

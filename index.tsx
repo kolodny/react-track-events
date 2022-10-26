@@ -20,13 +20,41 @@ type OnEvents<T> = Exclude<
   never
 >;
 
+type OtherCallbacks<T> = Exclude<
+  {
+    [K in keyof T]: K extends string
+      ? T[K] extends Function
+        ? K extends `on${Capitalize<string>}`
+          ? never
+          : K
+        : never
+      : never;
+  }[keyof T],
+  never
+>;
+
 type Trackable<T> = T & {
-  // [K in keyof T]: K extends `on${Capitalize<string>}` ? K : never
   [K in OnEvents<Required<T>> as `track${K}`]?:
     | boolean
+    | Record<string, any>
+    | string
     | ((
         ...arg: T extends Record<string, any>
           ? NonNullable<T[`on${K}`]> extends (...args: infer A) => any
+            ? A
+            : any
+          : any
+      ) => any);
+} & {
+  [K in OtherCallbacks<Required<T>> as `track_${K}`]?:
+    | boolean
+    | Record<string, any>
+    | string
+    | ((
+        ...arg: T extends Record<string, any>
+          ? NonNullable<T[K]> extends (...args: infer A) => any
+            ? A
+            : T[Capitalize<K>] extends (...args: infer A) => any
             ? A
             : any
           : any
@@ -37,8 +65,6 @@ interface TrackEvent {
   eventName: string;
   args: any[];
   ComponentType: React.ComponentType | keyof JSX.IntrinsicElements;
-  /** This will only be set when the Tracked component is passed a ref and it has a current value. */
-  instance?: any;
   info?: any;
   returnValue?: any;
   thisContext?: any;
@@ -50,6 +76,13 @@ type Ref<T> = T extends React.DetailedHTMLProps<infer U, any>
     : never
   : never;
 
+type TrackedIntrinsicElement<T extends keyof JSX.IntrinsicElements> =
+  React.ComponentType<
+    Trackable<JSX.IntrinsicElements[T]> & {
+      ref?: React.LegacyRef<Ref<JSX.IntrinsicElements[T]>>;
+    }
+  >;
+
 export const createTracker = (onTrack: (event: TrackEvent) => void) => {
   return trackElement;
 
@@ -58,29 +91,23 @@ export const createTracker = (onTrack: (event: TrackEvent) => void) => {
   ): TrackedElement<T>;
   function trackElement<T extends keyof JSX.IntrinsicElements>(
     tag: T
-  ): React.ComponentType<
-    Omit<Trackable<JSX.IntrinsicElements[T]>, 'ref'> & {
-      ref?: React.LegacyRef<Ref<JSX.IntrinsicElements[T]>>;
-    }
-  >;
+  ): TrackedIntrinsicElement<T>;
   function trackElement<T extends React.FunctionComponent<any>>(
     Component: T | keyof JSX.IntrinsicElements
   ) {
     const inner = ((props: any) => {
       const wrapped = { ...props };
       for (const key of Object.keys(props ?? {})) {
-        if (/^track[A-Z]/.test(key)) {
+        if (/^track[_A-Z]/.test(key)) {
           const value = wrapped[key];
           delete wrapped[key];
-          const eventName =
-            key.indexOf('trackFunction') === 0
-              ? key.slice(13)
-              : `on${key.slice(5)}`;
+          // track_ prefix is for raw non onSomething callbacks, otherwise we need to know casing beforehand.
+          const eventName = key[5] === '_' ? key.slice(6) : `on${key.slice(5)}`;
           const original = wrapped[eventName];
           wrapped[eventName] = function (...args: any[]) {
-            let info: any = undefined;
-            if (typeof value === 'function') {
-              info = value.apply(this, arguments);
+            let info = value;
+            if (typeof info === 'function') {
+              info = info.apply(this, arguments);
             }
             const returnValue = original?.apply(this, arguments);
             const trackEvent: TrackEvent = {
@@ -91,8 +118,7 @@ export const createTracker = (onTrack: (event: TrackEvent) => void) => {
             if (returnValue !== undefined) trackEvent.returnValue = returnValue;
             if (this !== undefined && this !== window)
               trackEvent.thisContext = this;
-            if (info !== undefined) trackEvent.info = info;
-            if (wrapped.ref?.current) trackEvent.instance = wrapped.ref.current;
+            if (info !== undefined && info !== true) trackEvent.info = info;
             onTrack(trackEvent);
             return returnValue;
           };

@@ -1,38 +1,118 @@
-import React from 'react';
 import { render } from '@testing-library/react';
-import App from './App';
+import { createTracker } from 'react-track-events';
+import { Slider } from '@mui/material';
+import React from 'react';
 
-// @testing-library/react is weird about many things updating and fails too early.
+describe('div', () => {
+  test('simple', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div');
+    const { container } = render(<Div trackClick>Test</Div>);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick' })
+    );
+  });
 
-test('tracks 1', async () => {
-  const log = jest.spyOn(console, 'log');
-  const { getAllByText } = render(<App />);
-  const div = getAllByText('Click me')[0];
-  div.click();
-  expect(log.mock.calls.pop()![0]).toContain('1');
+  test('with id', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div');
+    const { container } = render(<Div trackClick="my-event">Test</Div>);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick', info: 'my-event' })
+    );
+  });
+
+  test('with callback', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div');
+    const { container } = render(
+      <Div trackClick={(e) => e.type.toUpperCase()}>Test</Div>
+    );
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick', info: 'CLICK' })
+    );
+  });
+
+  test('with ref', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div');
+    const ref = { current: null as HTMLDivElement | null };
+    const { container } = render(
+      <Div about="me" ref={ref} trackClick>
+        Test
+      </Div>
+    );
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(ref.current?.getAttribute('about')).toBe('me');
+  });
 });
 
-test('tracks 2', async () => {
-  const log = jest.spyOn(console, 'log');
-  const { getAllByText } = render(<App />);
-  const div = getAllByText('Click me')[1];
-  div.click();
-  expect(log.mock.calls.pop()![0]).toContain('2');
-  expect(log).toHaveBeenCalledWith({ i: { custom: 'here' } });
+describe('Component', () => {
+  test('simple', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const MySlider = trackElement(Slider);
+    const { container } = render(<MySlider trackClick />);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick' })
+    );
+  });
+
+  test('with id', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const MySlider = trackElement(Slider);
+    const { container } = render(<MySlider trackClick="my-event" />);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick', info: 'my-event' })
+    );
+  });
+
+  test('with callback', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const MySlider = trackElement(Slider);
+    const { container } = render(
+      <MySlider trackClick={(e) => e.type.toUpperCase()} />
+    );
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick', info: 'CLICK' })
+    );
+  });
+
+  test('with ref', async () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const MySlider = trackElement(Slider);
+    const ref = { current: null as HTMLDivElement | null };
+    const { container } = render(<MySlider about="me2" ref={ref} trackClick />);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(ref.current?.getAttribute('about')).toBe('me2');
+  });
 });
 
-test('tracks 3', async () => {
-  const log = jest.spyOn(console, 'log');
-  const { container } = render(<App />);
-  const slider = container.querySelectorAll('.MuiSlider-root')[0];
-  (slider as any).click();
-  expect(log.mock.calls.pop()![0]).toContain('3');
-});
-
-test('tracks 4', async () => {
-  const log = jest.spyOn(console, 'log');
-  const { container } = render(<App />);
-  const slider = container.querySelectorAll('.MuiSlider-root')[1];
-  (slider as any).click();
-  expect(log.mock.calls.pop()![0]).toContain('4');
+test('works on non onFoo functions', () => {
+  const Component: React.FunctionComponent<{
+    somethingRandom?: (a: { random: true }) => void;
+  }> = (props) => {
+    props.somethingRandom?.({ random: true });
+    return <div />;
+  };
+  const spy = jest.fn();
+  const trackElement = createTracker(spy);
+  const MyComponent = trackElement(Component);
+  render(<MyComponent track_somethingRandom />);
+  expect(spy).toHaveBeenCalledWith(
+    expect.objectContaining({ eventName: 'somethingRandom' })
+  );
 });

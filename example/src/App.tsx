@@ -4,8 +4,6 @@ import { createTracker } from 'react-track-events';
 
 const trackElement = createTracker((event) => {
   console.log(event);
-  if (event.info) console.log({ i: event.info });
-  console.log([...event.instance.classList.values()]);
 });
 const Div = trackElement('div');
 const MySlider = trackElement(Slider);
@@ -18,6 +16,14 @@ function App() {
   );
 }
 
+const MyComponent: React.FunctionComponent<{
+  something: (a: { some: 'thing' }) => void;
+}> = (props) => {
+  props.something({ some: 'thing' });
+  return <div></div>;
+};
+const MyComponentTracked = trackElement(MyComponent);
+
 export default App;
 
 const Component: React.FunctionComponent = () => {
@@ -28,7 +34,11 @@ const Component: React.FunctionComponent = () => {
 
   return (
     <>
-      <Div trackClick className="1" ref={ref1}>
+      <MyComponentTracked
+        track_something={(x) => ({ x })}
+        something={(q) => console.log({ q })}
+      />
+      <Div trackClick="test" className="1" ref={ref1}>
         Click me
       </Div>
       <hr />

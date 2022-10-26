@@ -34,6 +34,8 @@ const Component: React.FunctionComponent = () => {
       {/* Can be used without having an onClick event bound */}
       <Div trackClick>Click me</Div>
       {/**/}
+      {/* Can add more info to the event object, ie `event.info === 'my-event'` */}
+      <Div trackClick="my-event">Click me</Div>
       {/* Can add more info to the event passed to createTracker as `info.custom` */}
       <Div trackClick={(event) => ({ custom: 'here' })}>Click me</Div>
       {/**/}

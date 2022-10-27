@@ -19,7 +19,7 @@ Simple React wrapper for Components to track events.
 import { createTracker } from 'react-track-events';
 
 const trackElement = createTracker((event) => {
-  // Will be called each time a tracked event is fired with
+  // Will be called each time a tracked event is fired with:
   // {
   //   eventName: event like 'onClick',
   //   ComponentType: 'div' or Dropdown,

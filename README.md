@@ -19,57 +19,84 @@ Simple React wrapper for Components to track events.
 import { createTracker } from 'react-track-events';
 
 const trackElement = createTracker((event) => {
-  const info: { featureName?: string; attributes?: any } = {};
-  if (Array.isArray(event.info)) {
-    info.featureName = event.info[0];
-    info.attributes = event.info[1];
-  } else {
-    info.featureName = event.info;
-  }
-
-  console.log(info);
+  // Will be called each time a tracked event is fired with
+  // {
+  //   eventName: event like 'onClick',
+  //   ComponentType: 'div' or Dropdown,
+  //   info?: 'whatever you passed to the trackEvent attribute (or return value of it being a function)'
+  //   args: [nativeEvent, ...args] // args passed to the event handler,
+  //   returnValue?: Whatever the event handler returned
+  //   thisContext?: context the event handler was called with;
+  // }
 });
 
 // Create a simple tracker for a div
 const Div = trackElement('div');
 
-// Create a div that automatically tracks specific events without
-// having to manually add a trackEvent attribute
-const AutoTrackDiv = trackElement('div', { alwaysTrack: ['onClick'] });
+const trackedDiv = <Div trackClick>I'm being tracked</Div>;
+const untrackedDiv = <Div>I'm not because there's no trackClick attribute</Div>;
 
-// Create a tracker for a Material Slider
-const MySlider = trackElement(Slider);
+const ClickTrackedDiv = trackElement('div', { alwaysTrack: ['onClick'] });
+const clickTrackedDiv = <ClickTrackedDiv>I'm being tracked</ClickTrackedDiv>;
+const autoTrackedDivWithFocus = (
+  <ClickTrackedDiv trackFocus>
+    I'm being tracked for clicks and focus
+  </ClickTrackedDiv>
+);
+const noClickTrackedDiv = (
+  <ClickTrackedDiv trackClick={false}>Not tracked</ClickTrackedDiv>
+);
 
-const Component: React.FunctionComponent = () => {
-  return (
-    <>
-      {/* Can be used without having an onClick event bound */}
-      <Div trackClick>Click me</Div>
-      {/* Can add more info to the event object, ie `event.info === 'my-event'` */}
-      <Div trackClick="my-event">Click me</Div>
-      {/* Can add more info to the event passed to createTracker as `info.custom` */}
-      <Div trackClick={['other-event1', { custom: 'here' }]}>Click me</Div>
-      <Div trackClick={(e) => ['other-event2', { eventName: e.eventName }]}>
-        Click me
-      </Div>
+// You can pass trackClick a value that will be passed to the tracker as the info property
+// event.info will be "some info"
+const trackedDivWithInfo = <Div trackClick="some info">I'm being tracked</Div>;
 
-      {/* Works on all React components */}
-      <MySlider trackChange />
-      <MySlider
-        onChange={(_mouseEvent, value) => console.log('changed', value)}
-        trackChange={(_mouseEvent, numberValue) => [
-          'value-changed',
-          { numberValue },
-        ]}
-      />
+// event.info will be `{ foo: 123 }`
+const trackedDivWithComplexInfo = <Div trackClick={{ foo: 123 }}>tracked</Div>;
 
-      {/* Autotracking work as expected */}
-      <AutoTrackDiv>tracked</AutoTrackDiv>
-      {/* You can still add info */}
-      <AutoTrackDiv trackClick="my-event">tracked</AutoTrackDiv>
-      {/* You can opt-out of tracking as well */}
-      <AutoTrackDiv trackClick={false}>tracked</AutoTrackDiv>
-    </>
-  );
-};
+// You can also pass a function will will then pass the return value as the info property
+// In this case event.info will be "my-class"
+const trackedDivWithFn = (
+  <Div className="my-class" trackClick={(e) => e.target.className}>
+    Tracked with function
+  </Div>
+);
+
+// You can track any React element, for example a Material UI Checkbox
+const AutoTrackedCheckbox = trackElement(Checkbox, {
+  alwaysTrack: ['onChange'],
+});
+const autoTrackedCheckbox = <AutoTrackedCheckbox />;
+
+const TrackedCheckbox = trackElement(Checkbox);
+// The function can pass important info about the event to the onEvent handler
+const box = (
+  <TrackedCheckbox trackChange={(event, value) => `checkbox-${value}`} />
+);
+// The above will pass 'checkbox-true' or 'checkbox-false' to the onEvent handler
+```
+
+### Typescript
+
+Beside the original typings of the tracked element (eg `form` having `onSubmit`, and `Checkbox` having `onChange`) you can also supply a generic type to `createTracker` to specify the type of the `info` property of the event and what should be passed in the `trackFoo` props.
+
+```tsx
+const trackStringyElement = createTracker<string>((event) => {
+  // event.info will be a string
+});
+const Div = trackStringyElement('div');
+const trackedDivGood = <Div trackClick="some info">I'm being tracked</Div>; // OK
+const trackedDivBad = <Div trackClick>trackClick needs to be a string</Div>; // Type Error
+
+const trackComplexElement = createTracker<
+  string | { feature: string; attributes: any }
+>((event) => {
+  const isString = typeof event.info === 'string';
+  const info = isString ? { feature: event.info } : event.info;
+  // analytics.track(info);
+});
+const D2 = trackStringyElement('div');
+const trackedDiv1 = <D2 trackClick="foo" />; // OK
+const trackedDiv2 = <D2 trackClick={{ feature: 'bar', attributes: 123 }} />; // OK
+const trackedDiv3 = <D2 trackClick={{ attributes: 123 }} />; // Type Error
 ```

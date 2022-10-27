@@ -148,4 +148,19 @@ describe('always track', () => {
       expect.objectContaining({ eventName: 'onClick', info: 'my-event' })
     );
   });
+
+  test('typed tracker', () => {
+    const spy = jest.fn();
+    const trackElement = createTracker<string>(spy);
+    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    let element: JSX.Element;
+
+    element = <Div>Test</Div>;
+    element = <Div trackClick="test">Test</Div>;
+    // @ts-expect-error
+    element = <Div trackClick>Test</Div>;
+    // @ts-expect-error
+    element = <Div trackClick={['ok']}>Test</Div>;
+    if (element) void undefined; // Get rid of lint error
+  });
 });

@@ -1,71 +1,69 @@
 import React from 'react';
 
-type TrackedElement<T extends React.ComponentType> =
-  T extends React.FunctionComponent<infer Props>
-    ? React.FunctionComponent<Trackable<Props>>
-    : T extends React.ComponentClass<infer Props>
-    ? React.ComponentClass<Trackable<Props>>
-    : never;
+type TrackedElement<
+  Element extends React.ComponentType,
+  Info extends InfoType
+> = Element extends React.FunctionComponent<infer Props>
+  ? React.FunctionComponent<Trackable<Props, Info>>
+  : Element extends React.ComponentClass<infer Props>
+  ? React.ComponentClass<Trackable<Props, Info>>
+  : never;
 
-type OnEvents<T> = Exclude<
+type OnEvents<Props> = Exclude<
   {
-    [K in keyof T]: K extends `on${Capitalize<string>}`
-      ? T[K] extends Function
+    [K in keyof Props]: K extends `on${Capitalize<string>}`
+      ? Props[K] extends Function
         ? K extends `on${infer E}`
           ? E
           : never
         : never
       : never;
-  }[keyof T],
+  }[keyof Props],
   never
 >;
 
-type OtherCallbacks<T> = Exclude<
+type OtherCallbacks<Props> = Exclude<
   {
-    [K in keyof T]: K extends string
-      ? T[K] extends Function
+    [K in keyof Props]: K extends string
+      ? Props[K] extends Function
         ? K extends `on${Capitalize<string>}`
           ? never
           : K
         : never
       : never;
-  }[keyof T],
+  }[keyof Props],
   never
 >;
 
-type Trackable<T> = T & {
-  [K in OnEvents<Required<T>> as `track${K}`]?:
-    | boolean
-    | Record<string, any>
-    | string
+type Trackable<Props, Info extends InfoType> = Props & {
+  [K in OnEvents<Required<Props>> as `track${K}`]?:
+    | Info
     | ((
-        ...arg: T extends Record<string, any>
-          ? NonNullable<T[`on${K}`]> extends (...args: infer A) => any
+        ...arg: Props extends Record<string, any>
+          ? NonNullable<Props[`on${K}`]> extends (...args: infer A) => any
             ? A
             : any
           : any
-      ) => any);
+      ) => Info);
 } & {
-  [K in OtherCallbacks<Required<T>> as `track_${K}`]?:
-    | boolean
-    | Record<string, any>
-    | string
+  [K in OtherCallbacks<Required<Props>> as `track_${K}`]?:
+    | Info
     | ((
-        ...arg: T extends Record<string, any>
-          ? NonNullable<T[K]> extends (...args: infer A) => any
+        ...arg: Props extends Record<string, any>
+          ? NonNullable<Props[K]> extends (...args: infer A) => any
             ? A
-            : T[Capitalize<K>] extends (...args: infer A) => any
+            : Props[Capitalize<K>] extends (...args: infer A) => any
             ? A
             : any
           : any
-      ) => any);
+      ) => Info);
 };
 
-interface TrackEvent {
+interface TrackEvent<Info extends InfoType> {
   eventName: string;
   args: any[];
   ComponentType: React.ComponentType | keyof JSX.IntrinsicElements;
-  info?: any;
+  info: Info;
   returnValue?: any;
   thisContext?: any;
 }
@@ -76,12 +74,14 @@ type Ref<T> = T extends React.DetailedHTMLProps<infer U, any>
     : never
   : never;
 
-type TrackedIntrinsicElement<T extends keyof JSX.IntrinsicElements> =
-  React.ComponentType<
-    Trackable<JSX.IntrinsicElements[T]> & {
-      ref?: React.LegacyRef<Ref<JSX.IntrinsicElements[T]>>;
-    }
-  >;
+type TrackedIntrinsicElement<
+  T extends keyof JSX.IntrinsicElements,
+  Info extends InfoType
+> = React.ComponentType<
+  Trackable<JSX.IntrinsicElements[T], Info> & {
+    ref?: React.LegacyRef<Ref<JSX.IntrinsicElements[T]>>;
+  }
+>;
 
 interface Options {
   /**
@@ -91,6 +91,8 @@ interface Options {
   alwaysTrack?: string[];
 }
 
+type InfoType = number | string | any[] | {} | undefined;
+
 const attributeToEventName = (attribute: string) =>
   attribute[5] === '_' ? attribute.slice(6) : `on${attribute.slice(5)}`;
 const eventNameToAttribute = (eventName: string) =>
@@ -98,19 +100,21 @@ const eventNameToAttribute = (eventName: string) =>
     ? `track${eventName.slice(2)}`
     : `track_${eventName}`;
 
-export const createTracker = (onTrack: (event: TrackEvent) => void) => {
+export const createTracker = <Info extends InfoType>(
+  onTrack: (event: TrackEvent<Info>) => void
+) => {
   return trackElement;
 
-  function trackElement<T extends React.FunctionComponent<any>>(
-    Component: T,
+  function trackElement<Element extends React.FunctionComponent<any>>(
+    Component: Element,
     options?: Options
-  ): TrackedElement<T>;
-  function trackElement<T extends keyof JSX.IntrinsicElements>(
-    tag: T,
+  ): TrackedElement<Element, Info>;
+  function trackElement<Tag extends keyof JSX.IntrinsicElements>(
+    tag: Tag,
     options?: Options
-  ): TrackedIntrinsicElement<T>;
-  function trackElement<T extends React.FunctionComponent<any>>(
-    Component: T | keyof JSX.IntrinsicElements,
+  ): TrackedIntrinsicElement<Tag, Info>;
+  function trackElement<Element extends React.FunctionComponent<any>>(
+    Component: Element | keyof JSX.IntrinsicElements,
     options?: Options
   ) {
     let alwaysTrackAttributes: Record<string, true> | undefined = undefined;
@@ -143,11 +147,11 @@ export const createTracker = (onTrack: (event: TrackEvent) => void) => {
               info = info.apply(this, arguments);
             }
             const returnValue = original?.apply(this, arguments);
-            const trackEvent: TrackEvent = {
+            const trackEvent: TrackEvent<Info> = {
               eventName,
               ComponentType: Component,
               args,
-            };
+            } as any;
             if (returnValue !== undefined) trackEvent.returnValue = returnValue;
             if (this !== undefined && this !== window)
               trackEvent.thisContext = this;
@@ -159,7 +163,7 @@ export const createTracker = (onTrack: (event: TrackEvent) => void) => {
       }
 
       return React.createElement(Component, wrapped);
-    }) as TrackedElement<T>;
+    }) as TrackedElement<Element, Info>;
 
     return React.forwardRef((props, ref) => {
       return inner({ ...props, ref });

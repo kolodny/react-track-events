@@ -1,12 +1,23 @@
-import { Slider } from '@mui/material';
+import { Switch } from '@mui/material';
 import React from 'react';
 import { createTracker } from 'react-track-events';
 
+import './App.css';
+
 const trackElement = createTracker((event) => {
-  console.log(event);
+  const info: { eventName?: string; attributes?: any } = {};
+  if (Array.isArray(event.info)) {
+    info.eventName = event.info[0];
+    info.attributes = event.info[1];
+  } else {
+    info.eventName = event.info;
+  }
+
+  console.log(info);
 });
 const Div = trackElement('div');
-const MySlider = trackElement(Slider);
+const AutTrackDiv = trackElement('div', { alwaysTrack: ['onClick'] });
+const MySwitch = trackElement(Switch);
 
 function App() {
   return (
@@ -20,45 +31,40 @@ const MyComponent: React.FunctionComponent<{
   something: (a: { some: 'thing' }) => void;
 }> = (props) => {
   props.something({ some: 'thing' });
-  return <div></div>;
+  return null;
 };
 const MyComponentTracked = trackElement(MyComponent);
 
 export default App;
 
 const Component: React.FunctionComponent = () => {
-  const ref1 = React.useRef<HTMLDivElement>(null);
-  const ref2 = React.useRef<HTMLDivElement>(null);
-  const ref3 = React.useRef<HTMLDivElement>(null);
-  const ref4 = React.useRef<HTMLDivElement>(null);
-
   return (
     <>
       <MyComponentTracked
-        track_something={(x) => ({ x })}
-        something={(q) => console.log({ q })}
+        track_something="something cool"
+        something={() => {}}
       />
-      <Div trackClick="test" className="1" ref={ref1}>
-        Click me
+      <AutTrackDiv>Logs eventName: undefined</AutTrackDiv>
+      <AutTrackDiv trackClick={false}>Doesn't log anything</AutTrackDiv>
+      <AutTrackDiv trackClick="test">Logs eventName: 'test'</AutTrackDiv>
+      <hr />
+      <Div>Doesn't log anything</Div>
+      <Div trackClick>Logs eventName: undefined</Div>
+      <Div trackClick={false}>Doesn't log anything</Div>
+      <Div trackClick="test">Logs eventName: 'test'</Div>
+      <Div trackClick={['more', { custom: 'attrs' }]}>
+        Logs eventName: 'more', attributes: {'{'}custom: 'attrs'{'}'}
       </Div>
       <hr />
-      <hr />
-      <Div
-        trackClick={(event) => ({ custom: 'here' })}
-        ref={ref2}
-        className="2"
-      >
-        Click me
-      </Div>
-      <hr />
-      <MySlider ref={ref3} className="3" trackChange trackClick />
-      <MySlider
-        ref={ref4}
-        className="4"
-        onChange={(_mouseEvent, value) => console.log('changed', value)}
-        trackChange={(_mouseEvent, numberValue) => ({ numberValue })}
-        trackClick
-      />
+      <label>
+        Logs eventName: 'switch-no-info-on-value'
+        <MySwitch trackChange="switch-no-info-on-value" />
+      </label>
+      <br />
+      <label>
+        Logs eventName: 'switch', attributes: {'{'}checked: true{'}'}
+        <MySwitch trackChange={(_e, checked) => ['switch', { checked }]} />
+      </label>
     </>
   );
 };

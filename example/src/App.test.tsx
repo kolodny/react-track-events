@@ -4,7 +4,7 @@ import { Slider } from '@mui/material';
 import React from 'react';
 
 describe('div', () => {
-  test('simple', async () => {
+  test('simple', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const Div = trackElement('div');
@@ -15,7 +15,7 @@ describe('div', () => {
     );
   });
 
-  test('with id', async () => {
+  test('with id', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const Div = trackElement('div');
@@ -26,7 +26,7 @@ describe('div', () => {
     );
   });
 
-  test('with callback', async () => {
+  test('with callback', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const Div = trackElement('div');
@@ -39,7 +39,7 @@ describe('div', () => {
     );
   });
 
-  test('with ref', async () => {
+  test('with ref', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const Div = trackElement('div');
@@ -55,7 +55,7 @@ describe('div', () => {
 });
 
 describe('Component', () => {
-  test('simple', async () => {
+  test('simple', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const MySlider = trackElement(Slider);
@@ -66,7 +66,7 @@ describe('Component', () => {
     );
   });
 
-  test('with id', async () => {
+  test('with id', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const MySlider = trackElement(Slider);
@@ -77,7 +77,7 @@ describe('Component', () => {
     );
   });
 
-  test('with callback', async () => {
+  test('with callback', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const MySlider = trackElement(Slider);
@@ -90,7 +90,7 @@ describe('Component', () => {
     );
   });
 
-  test('with ref', async () => {
+  test('with ref', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
     const MySlider = trackElement(Slider);
@@ -115,4 +115,37 @@ test('works on non onFoo functions', () => {
   expect(spy).toHaveBeenCalledWith(
     expect.objectContaining({ eventName: 'somethingRandom' })
   );
+});
+
+describe('always track', () => {
+  test('simple', () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    const { container } = render(<Div>Test</Div>);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick' })
+    );
+  });
+
+  test('passed false', () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    const { container } = render(<Div trackClick={false}>Test</Div>);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('with id', () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    const { container } = render(<Div trackClick="my-event">Test</Div>);
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventName: 'onClick', info: 'my-event' })
+    );
+  });
 });

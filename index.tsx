@@ -83,29 +83,62 @@ type TrackedIntrinsicElement<T extends keyof JSX.IntrinsicElements> =
     }
   >;
 
+interface Options {
+  /**
+   * Always track.
+   *   IE passing ['onClick'] tracks click events without needing to pass trackClick attribute.
+   */
+  alwaysTrack?: string[];
+}
+
+const attributeToEventName = (attribute: string) =>
+  attribute[5] === '_' ? attribute.slice(6) : `on${attribute.slice(5)}`;
+const eventNameToAttribute = (eventName: string) =>
+  /^on[A-Z]/.test(eventName)
+    ? `track${eventName.slice(2)}`
+    : `track_${eventName}`;
+
 export const createTracker = (onTrack: (event: TrackEvent) => void) => {
   return trackElement;
 
   function trackElement<T extends React.FunctionComponent<any>>(
-    Component: T
+    Component: T,
+    options?: Options
   ): TrackedElement<T>;
   function trackElement<T extends keyof JSX.IntrinsicElements>(
-    tag: T
+    tag: T,
+    options?: Options
   ): TrackedIntrinsicElement<T>;
   function trackElement<T extends React.FunctionComponent<any>>(
-    Component: T | keyof JSX.IntrinsicElements
+    Component: T | keyof JSX.IntrinsicElements,
+    options?: Options
   ) {
+    let alwaysTrackAttributes: Record<string, true> | undefined = undefined;
+    if (options?.alwaysTrack) {
+      alwaysTrackAttributes = {};
+      for (const eventName of options.alwaysTrack) {
+        const attribute = eventNameToAttribute(eventName);
+        alwaysTrackAttributes[attribute] = true;
+      }
+    }
+
     const inner = ((props: any) => {
-      const wrapped = { ...props };
-      for (const key of Object.keys(props ?? {})) {
-        if (/^track[_A-Z]/.test(key)) {
-          const value = wrapped[key];
-          delete wrapped[key];
-          // track_ prefix is for raw non onSomething callbacks, otherwise we need to know casing beforehand.
-          const eventName = key[5] === '_' ? key.slice(6) : `on${key.slice(5)}`;
+      const propsWithAlways = alwaysTrackAttributes
+        ? { ...alwaysTrackAttributes, ...props }
+        : props;
+
+      const wrapped: any = {};
+      for (const key of Object.keys(propsWithAlways)) {
+        if (!/^track[_A-Z]/.test(key)) {
+          // Just a regular prop that we need to copy
+          wrapped[key] = props[key];
+        } else {
+          // A trackThing attribute
+          if (props[key] === false) continue;
+          const eventName = attributeToEventName(key);
           const original = wrapped[eventName];
           wrapped[eventName] = function (...args: any[]) {
-            let info = value;
+            let info = props[key] as any;
             if (typeof info === 'function') {
               info = info.apply(this, arguments);
             }

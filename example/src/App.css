@@ -1,0 +1,11 @@
+#root > div,
+#root > label {
+  border: 1px solid black;
+  padding: 8px;
+  margin: 4px;
+  font-family: monospace;
+}
+
+#root > div {
+  cursor: pointer;
+}

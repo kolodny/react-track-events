@@ -1,12 +1,12 @@
 {
   "name": "react-track-events",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Track all events on an element",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test:example": "cd example && npm test -- --watchAll=false",
+    "test:example": "cd example && tsc --noEmit && npm test -- --watchAll=false",
     "test": "npm run build && npm run test:example"
   },
   "keywords": [],

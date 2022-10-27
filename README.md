@@ -86,7 +86,8 @@ const trackStringyElement = createTracker<string>((event) => {
 });
 const Div = trackStringyElement('div');
 const trackedDivGood = <Div trackClick="some info">I'm being tracked</Div>; // OK
-const trackedDivBad = <Div trackClick>trackClick needs to be a string</Div>; // Type Error
+const trackedDivBad1 = <Div>trackClick is required</Div>; // Type Error
+const trackedDivBad2 = <Div trackClick>trackClick needs to be a string</Div>; // Type Error
 
 const trackComplexElement = createTracker<
   string | { feature: string; attributes: any }

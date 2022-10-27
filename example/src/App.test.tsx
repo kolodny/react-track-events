@@ -148,19 +148,144 @@ describe('always track', () => {
       expect.objectContaining({ eventName: 'onClick', info: 'my-event' })
     );
   });
+});
 
-  test('typed tracker', () => {
-    const spy = jest.fn();
-    const trackElement = createTracker<string>(spy);
-    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
-    let element: JSX.Element;
+test('typings work', () => {
+  const trackUntyped = createTracker(() => {});
+  const trackTyped = createTracker<'tYpEd'>(() => {});
+  let element: JSX.Element;
 
-    element = <Div>Test</Div>;
-    element = <Div trackClick="test">Test</Div>;
-    // @ts-expect-error
-    element = <Div trackClick>Test</Div>;
-    // @ts-expect-error
-    element = <Div trackClick={['ok']}>Test</Div>;
-    if (element) void undefined; // Get rid of lint error
+  const UntypedDiv = trackUntyped('div');
+  element = <UntypedDiv />;
+  element = <UntypedDiv trackClick />;
+  element = <UntypedDiv trackClick={false} />;
+  element = <UntypedDiv trackClick="123" />;
+  element = <UntypedDiv trackClick={123} />;
+  element = <UntypedDiv trackClick={() => 123} />;
+
+  const UntypedDivAlways = trackUntyped('div', { alwaysTrack: ['onClick'] });
+  // @ts-expect-error
+  trackUntyped('div', { alwaysTrack: ['onNone'] });
+  element = <UntypedDivAlways />;
+  element = <UntypedDivAlways trackClick />;
+  element = <UntypedDivAlways trackClick={false} />;
+  element = <UntypedDivAlways trackClick="123" />;
+  element = <UntypedDivAlways trackClick={123} />;
+  element = <UntypedDivAlways trackClick={() => 123} />;
+
+  const TypedDiv = trackTyped('div');
+  element = <TypedDiv trackClick="tYpEd" />;
+  element = <TypedDiv trackClick={() => 'tYpEd'} />;
+  element = <TypedDiv />;
+  // @ts-expect-error
+  element = <TypedDiv trackClick />;
+  element = <TypedDiv trackClick={false} />;
+  // @ts-expect-error
+  element = <TypedDiv trackClick="123" />;
+  // @ts-expect-error
+  element = <TypedDiv trackClick={123} />;
+  // @ts-expect-error
+  element = <TypedDiv trackClick={() => 123} />;
+
+  const TypedDivAlways = trackTyped('div', { alwaysTrack: ['onClick'] });
+  // @ts-expect-error
+  trackTyped('div', { alwaysTrack: ['onNone'] });
+  element = <TypedDivAlways trackClick="tYpEd" />;
+  element = <TypedDivAlways trackClick={() => 'tYpEd'} />;
+  // @ts-expect-error
+  element = <TypedDivAlways />;
+  // @ts-expect-error
+  element = <TypedDivAlways trackClick />;
+  element = <TypedDivAlways trackClick={false} />;
+  // @ts-expect-error
+  element = <TypedDivAlways trackClick="123" />;
+  // @ts-expect-error
+  element = <TypedDivAlways trackClick={123} />;
+  // @ts-expect-error
+  element = <TypedDivAlways trackClick={() => 123} />;
+
+  const UntypedSlider = trackUntyped(Slider);
+  element = <UntypedSlider />;
+  element = <UntypedSlider trackClick />;
+  element = <UntypedSlider trackClick={false} />;
+  element = <UntypedSlider trackClick="123" />;
+  element = <UntypedSlider trackClick={123} />;
+  element = <UntypedSlider trackClick={() => 123} />;
+
+  const UntypedSliderAlways = trackUntyped(Slider, {
+    alwaysTrack: ['onClick'],
   });
+  // @ts-expect-error
+  trackUntyped(Slider, { alwaysTrack: ['onNone'] });
+  element = <UntypedSliderAlways />;
+  element = <UntypedSliderAlways trackClick />;
+  element = <UntypedSliderAlways trackClick={false} />;
+  element = <UntypedSliderAlways trackClick="123" />;
+  element = <UntypedSliderAlways trackClick={123} />;
+  element = <UntypedSliderAlways trackClick={() => 123} />;
+
+  const TypedSlider = trackTyped(Slider);
+  element = <TypedSlider trackClick="tYpEd" />;
+  element = <TypedSlider trackClick={() => 'tYpEd'} />;
+  element = <TypedSlider />;
+  // @ts-expect-error
+  element = <TypedSlider trackClick />;
+  element = <TypedSlider trackClick={false} />;
+  // @ts-expect-error
+  element = <TypedSlider trackClick="123" />;
+  // @ts-expect-error
+  element = <TypedSlider trackClick={123} />;
+  // @ts-expect-error
+  element = <TypedSlider trackClick={() => 123} />;
+
+  const TypedSliderAlways = trackTyped(Slider, { alwaysTrack: ['onClick'] });
+  // @ts-expect-error
+  trackTyped(Slider, { alwaysTrack: ['onNone'] });
+  element = <TypedSliderAlways trackClick="tYpEd" />;
+  element = <TypedSliderAlways trackClick={() => 'tYpEd'} />;
+  // @ts-expect-error
+  element = <TypedSliderAlways />;
+  // @ts-expect-error
+  element = <TypedSliderAlways trackClick />;
+  element = <TypedSliderAlways trackClick={false} />;
+  // @ts-expect-error
+  element = <TypedSliderAlways trackClick="123" />;
+  // @ts-expect-error
+  element = <TypedSliderAlways trackClick={123} />;
+  // @ts-expect-error
+  element = <TypedSliderAlways trackClick={() => 123} />;
+
+  interface FakeMap {
+    is: 'a map';
+  }
+  interface Props {
+    loaded?: (map: FakeMap) => void;
+  }
+  const Map: React.FunctionComponent<Props> = () => <div />;
+  const TrackedMap = trackTyped(Map);
+  element = <TrackedMap />;
+  // @ts-expect-error
+  element = <TrackedMap track_loaded />;
+  element = <TrackedMap track_loaded="tYpEd" />;
+  element = (
+    <TrackedMap
+      track_loaded={(map) => (map.is === 'a map' ? 'tYpEd' : 'tYpEd')}
+    />
+  );
+
+  // @ts-expect-error
+  trackTyped(Map, { alwaysTrack: ['load'] });
+  const TrackedMapAlways = trackTyped(Map, { alwaysTrack: ['loaded'] });
+  // @ts-expect-error
+  element = <TrackedMapAlways />;
+  // @ts-expect-error
+  element = <TrackedMap track_loaded />;
+  element = <TrackedMap track_loaded="tYpEd" />;
+  element = (
+    <TrackedMap
+      track_loaded={(map) => (map.is === 'a map' ? 'tYpEd' : 'tYpEd')}
+    />
+  );
+
+  if (element) void undefined; // Get rid of lint error
 });

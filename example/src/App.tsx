@@ -5,16 +5,9 @@ import { createTracker } from 'react-track-events';
 import './App.css';
 
 const trackElement = createTracker((event) => {
-  const info: { eventName?: string; attributes?: any } = {};
-  if (Array.isArray(event.info)) {
-    info.eventName = event.info[0];
-    info.attributes = event.info[1];
-  } else {
-    info.eventName = event.info;
-  }
-
-  console.log(info);
+  console.log(event);
 });
+
 const Div = trackElement('div');
 const AutTrackDiv = trackElement('div', { alwaysTrack: ['onClick'] });
 const MySwitch = trackElement(Switch);

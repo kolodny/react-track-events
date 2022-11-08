@@ -8,8 +8,8 @@ const trackElement = createTracker((event) => {
   console.log(event);
 });
 
-const Div = trackElement('div');
-const AutTrackDiv = trackElement('div', { alwaysTrack: ['onClick'] });
+const Div = trackElement.intrinsicElements.div;
+const AutTrackDiv = trackElement.withOptions({ alwaysTrack: ['onClick'] }).div;
 const MySwitch = trackElement(Switch);
 
 function App() {
@@ -58,6 +58,9 @@ const Component: React.FunctionComponent = () => {
         Logs eventName: 'switch', attributes: {'{'}checked: true{'}'}
         <MySwitch trackChange={(_e, checked) => ['switch', { checked }]} />
       </label>
+      <trackElement.intrinsicElements.div trackClick="cool">
+        trackElement.div
+      </trackElement.intrinsicElements.div>
     </>
   );
 };

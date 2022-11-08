@@ -22,7 +22,7 @@ const trackElement = createTracker((event) => {
   // Will be called each time a tracked event is fired with:
   // {
   //   eventName: event like 'onClick',
-  //   ComponentType: 'div' or Dropdown,
+  //   ComponentType: something like `Dropdown`,
   //   info?: 'whatever you passed to the trackEvent attribute (or return value of it being a function)'
   //   args: [nativeEvent, ...args] // args passed to the event handler,
   //   returnValue?: Whatever the event handler returned
@@ -31,12 +31,23 @@ const trackElement = createTracker((event) => {
 });
 
 // Create a simple tracker for a div
-const Div = trackElement('div');
-
+const Div = trackElement.trackIntrinsicElement('div');
 const trackedDiv = <Div trackClick>I'm being tracked</Div>;
+
+// OR use the returned intrinsicElements object
+const tracked = trackElement.intrinsicElements;
+const trackedDiv = <tracked.div trackClick>I'm being tracked</tracked.div>;
+
 const untrackedDiv = <Div>I'm not because there's no trackClick attribute</Div>;
 
-const ClickTrackedDiv = trackElement('div', { alwaysTrack: ['onClick'] });
+const ClickTrackedDiv = trackElement.trackIntrinsicElement('div', {
+  alwaysTrack: ['onClick'],
+});
+// OR
+const ClickTrackedDiv = trackElement.withOptions({
+  alwaysTrack: ['onClick'],
+}).div;
+
 const clickTrackedDiv = <ClickTrackedDiv>I'm being tracked</ClickTrackedDiv>;
 const autoTrackedDivWithFocus = (
   <ClickTrackedDiv trackFocus>
@@ -84,7 +95,7 @@ Beside the original typings of the tracked element (eg `form` having `onSubmit`,
 const trackStringyElement = createTracker<string>((event) => {
   // event.info will be a string
 });
-const Div = trackStringyElement('div');
+const Div = trackStringyElement.intrinsicElements.div;
 const trackedDivGood = <Div trackClick="some info">I'm being tracked</Div>; // OK
 const trackedDivBad1 = <Div>trackClick is required</Div>; // Type Error
 const trackedDivBad2 = <Div trackClick>trackClick needs to be a string</Div>; // Type Error
@@ -96,7 +107,7 @@ const trackComplexElement = createTracker<
   const info = isString ? { feature: event.info } : event.info;
   // analytics.track(info);
 });
-const D2 = trackStringyElement('div');
+const D2 = trackStringyElement.intrinsicElements('div');
 const trackedDiv1 = <D2 trackClick="foo" />; // OK
 const trackedDiv2 = <D2 trackClick={{ feature: 'bar', attributes: 123 }} />; // OK
 const trackedDiv3 = <D2 trackClick={{ attributes: 123 }} />; // Type Error

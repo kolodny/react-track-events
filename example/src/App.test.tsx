@@ -7,7 +7,7 @@ describe('div', () => {
   test('simple', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div');
+    const Div = trackElement.intrinsicElements.div;
     const { container } = render(<Div trackClick>Test</Div>);
     (container.firstElementChild as HTMLDivElement)?.click();
     expect(spy).toHaveBeenCalledWith(
@@ -18,7 +18,7 @@ describe('div', () => {
   test('with id', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div');
+    const Div = trackElement.intrinsicElements.div;
     const { container } = render(<Div trackClick="my-event">Test</Div>);
     (container.firstElementChild as HTMLDivElement)?.click();
     expect(spy).toHaveBeenCalledWith(
@@ -29,7 +29,7 @@ describe('div', () => {
   test('with callback', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div');
+    const Div = trackElement.intrinsicElements.div;
     const { container } = render(
       <Div trackClick={(e) => e.type.toUpperCase()}>Test</Div>
     );
@@ -42,7 +42,7 @@ describe('div', () => {
   test('with ref', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div');
+    const Div = trackElement.intrinsicElements.div;
     const ref = { current: null as HTMLDivElement | null };
     const { container } = render(
       <Div about="me" ref={ref} trackClick>
@@ -121,7 +121,7 @@ describe('always track', () => {
   test('simple', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    const Div = trackElement.withOptions({ alwaysTrack: ['onClick'] }).div;
     const { container } = render(<Div>Test</Div>);
     (container.firstElementChild as HTMLDivElement)?.click();
     expect(spy).toHaveBeenCalledWith(
@@ -132,7 +132,7 @@ describe('always track', () => {
   test('passed false', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    const Div = trackElement.withOptions({ alwaysTrack: ['onClick'] }).div;
     const { container } = render(<Div trackClick={false}>Test</Div>);
     (container.firstElementChild as HTMLDivElement)?.click();
     expect(spy).not.toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe('always track', () => {
   test('with id', () => {
     const spy = jest.fn();
     const trackElement = createTracker(spy);
-    const Div = trackElement('div', { alwaysTrack: ['onClick'] });
+    const Div = trackElement.withOptions({ alwaysTrack: ['onClick'] }).div;
     const { container } = render(<Div trackClick="my-event">Test</Div>);
     (container.firstElementChild as HTMLDivElement)?.click();
     expect(spy).toHaveBeenCalledWith(
@@ -155,7 +155,7 @@ test('typings work', () => {
   const trackTyped = createTracker<'tYpEd'>(() => {});
   let element: JSX.Element;
 
-  const UntypedDiv = trackUntyped('div');
+  const UntypedDiv = trackUntyped.intrinsicElements.div;
   element = <UntypedDiv />;
   element = <UntypedDiv trackClick />;
   element = <UntypedDiv trackClick={false} />;
@@ -163,7 +163,9 @@ test('typings work', () => {
   element = <UntypedDiv trackClick={123} />;
   element = <UntypedDiv trackClick={() => 123} />;
 
-  const UntypedDivAlways = trackUntyped('div', { alwaysTrack: ['onClick'] });
+  const UntypedDivAlways = trackUntyped.withOptions({
+    alwaysTrack: ['onClick'],
+  }).div;
   // @ts-expect-error
   trackUntyped('div', { alwaysTrack: ['onNone'] });
   element = <UntypedDivAlways />;
@@ -173,7 +175,7 @@ test('typings work', () => {
   element = <UntypedDivAlways trackClick={123} />;
   element = <UntypedDivAlways trackClick={() => 123} />;
 
-  const TypedDiv = trackTyped('div');
+  const TypedDiv = trackTyped.intrinsicElements.div;
   element = <TypedDiv trackClick="tYpEd" />;
   element = <TypedDiv trackClick={() => 'tYpEd'} />;
   element = <TypedDiv />;
@@ -187,7 +189,9 @@ test('typings work', () => {
   // @ts-expect-error
   element = <TypedDiv trackClick={() => 123} />;
 
-  const TypedDivAlways = trackTyped('div', { alwaysTrack: ['onClick'] });
+  const TypedDivAlways = trackTyped.withOptions({
+    alwaysTrack: ['onClick'],
+  }).div;
   // @ts-expect-error
   trackTyped('div', { alwaysTrack: ['onNone'] });
   element = <TypedDivAlways trackClick="tYpEd" />;

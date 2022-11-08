@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { tags } from './tags';
+
 type TrackedElement<
   Element extends React.ComponentType,
   Info extends InfoType,
@@ -125,7 +127,50 @@ const eventNameToAttribute = (eventName: string) =>
 export const createTracker = <Info extends InfoType>(
   onTrack: (event: TrackEvent<Info>) => void
 ) => {
-  return trackElement;
+  (trackElement as any).intrinsicElements = {};
+  for (const tag of tags) {
+    (trackElement as any).intrinsicElements[tag] = trackElement(tag as any);
+  }
+  (trackElement as any).withOptions = (options: any) => {
+    const elements: any = {};
+    for (const tag of tags) {
+      elements[tag] = trackElement(tag as any, options);
+    }
+    return elements;
+  };
+  (trackElement as any).trackIntrinsicElement = (tag: any, options: any) => {
+    return trackElement(tag as any, options);
+  };
+
+  return trackElement as typeof trackElement & {
+    intrinsicElements: {
+      [K in keyof JSX.IntrinsicElements]: TrackedIntrinsicElement<
+        K,
+        Info,
+        never
+      >;
+    };
+    withOptions: <
+      RequiredEvents extends keyof JSX.IntrinsicElements[keyof JSX.IntrinsicElements] &
+        `on${string}` = never
+    >(
+      options?: Options<RequiredEvents>
+    ) => {
+      [K in keyof JSX.IntrinsicElements]: TrackedIntrinsicElement<
+        K,
+        Info,
+        RequiredEvents
+      >;
+    };
+    trackIntrinsicElement: <
+      Tag extends keyof JSX.IntrinsicElements,
+      RequiredEvents extends keyof JSX.IntrinsicElements[Tag] &
+        `on${string}` = never
+    >(
+      tags: Tag,
+      options?: Options<RequiredEvents>
+    ) => TrackedIntrinsicElement<Tag, Info, RequiredEvents>;
+  };
 
   function trackElement<
     Element extends React.ComponentType<any>,
@@ -133,22 +178,7 @@ export const createTracker = <Info extends InfoType>(
   >(
     Component: Element,
     options?: Options<RequiredEvents>
-  ): TrackedElement<Element, Info, RequiredEvents>;
-  function trackElement<
-    Tag extends keyof JSX.IntrinsicElements,
-    RequiredEvents extends keyof JSX.IntrinsicElements[Tag] &
-      `on${string}` = never
-  >(
-    tag: Tag,
-    options?: Options<RequiredEvents>
-  ): TrackedIntrinsicElement<Tag, Info, RequiredEvents>;
-  function trackElement<
-    Element extends React.ComponentType<any>,
-    RequiredEvents extends string
-  >(
-    Component: Element | keyof JSX.IntrinsicElements,
-    options?: Options<RequiredEvents>
-  ) {
+  ): TrackedElement<Element, Info, RequiredEvents> {
     let alwaysTrackAttributes: Record<string, true> | undefined = undefined;
     if (options?.alwaysTrack) {
       alwaysTrackAttributes = {};

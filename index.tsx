@@ -212,15 +212,19 @@ export const createTracker = <Info extends InfoType, Breadcrumb = any>(
         : props;
 
       const wrapped: any = {};
+      const eventsSet = new Set<string>();
       for (const key of Object.keys(propsWithAlways)) {
         if (!/^track[_A-Z]/.test(key)) {
           // Just a regular prop that we need to copy
-          wrapped[key] = props[key];
+          if (!eventsSet.has(key)) {
+            wrapped[key] = props[key];
+          }
         } else {
           // A trackThing attribute
           if (props[key] === false) continue;
           const eventName = attributeToEventName(key);
-          const original = wrapped[eventName];
+          eventsSet.add(eventName);
+          const original = props[eventName];
           wrapped[eventName] = function (...args: any[]) {
             let info = props[key] as any;
             if (typeof info === 'function') {

@@ -75,11 +75,12 @@ type Trackable<
           | ((...arg: Args<Props, K>) => Info);
       });
 
-interface TrackEvent<Info extends InfoType> {
+interface TrackEvent<Info extends InfoType, Breadcrumb> {
   eventName: string;
   args: any[];
   ComponentType: React.ComponentType | keyof JSX.IntrinsicElements;
   info: Info;
+  breadcrumbs: Breadcrumb[];
   returnValue?: any;
   thisContext?: any;
 }
@@ -124,8 +125,8 @@ const eventNameToAttribute = (eventName: string) =>
     ? `track${eventName.slice(2)}`
     : `track_${eventName}`;
 
-export const createTracker = <Info extends InfoType>(
-  onTrack: (event: TrackEvent<Info>) => void
+export const createTracker = <Info extends InfoType, Breadcrumb = any>(
+  onTrack: (event: TrackEvent<Info, Breadcrumb>) => void
 ) => {
   (trackElement as any).intrinsicElements = {};
   for (const tag of tags) {
@@ -142,6 +143,21 @@ export const createTracker = <Info extends InfoType>(
     return trackElement(tag as any, options);
   };
 
+  const BreadcrumbContext = React.createContext<any[]>([]);
+  const BreadcrumbProvider = (props: {
+    children: React.ReactNode;
+    crumb: Breadcrumb;
+  }) => {
+    const crumbs = React.useContext(BreadcrumbContext);
+    return (
+      <BreadcrumbContext.Provider value={[...crumbs, props.crumb]}>
+        {props.children}
+      </BreadcrumbContext.Provider>
+    );
+  };
+
+  (trackElement as any).Breadcrumb = BreadcrumbProvider;
+
   return trackElement as typeof trackElement & {
     intrinsicElements: {
       [K in keyof JSX.IntrinsicElements]: TrackedIntrinsicElement<
@@ -150,6 +166,7 @@ export const createTracker = <Info extends InfoType>(
         never
       >;
     };
+    Breadcrumb: typeof BreadcrumbProvider;
     withOptions: <
       RequiredEvents extends keyof JSX.IntrinsicElements[keyof JSX.IntrinsicElements] &
         `on${string}` = never
@@ -189,6 +206,7 @@ export const createTracker = <Info extends InfoType>(
     }
 
     const inner = ((props: any) => {
+      const breadcrumbs = React.useContext(BreadcrumbContext);
       const propsWithAlways = alwaysTrackAttributes
         ? { ...alwaysTrackAttributes, ...props }
         : props;
@@ -209,10 +227,11 @@ export const createTracker = <Info extends InfoType>(
               info = info.apply(this, arguments);
             }
             const returnValue = original?.apply(this, arguments);
-            const trackEvent: TrackEvent<Info> = {
+            const trackEvent: TrackEvent<Info, Breadcrumb> = {
               eventName,
               ComponentType: Component,
               args,
+              breadcrumbs,
             } as any;
             if (returnValue !== undefined) trackEvent.returnValue = returnValue;
             if (this !== undefined && this !== window)

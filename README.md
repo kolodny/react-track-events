@@ -24,6 +24,7 @@ const trackElement = createTracker((event) => {
   //   eventName: event like 'onClick',
   //   ComponentType: something like `Dropdown`,
   //   info?: 'whatever you passed to the trackEvent attribute (or return value of it being a function)'
+  //   breadcrumbs: array of <Breadcrumb> crumbs wrapping the node
   //   args: [nativeEvent, ...args] // args passed to the event handler,
   //   returnValue?: Whatever the event handler returned
   //   thisContext?: context the event handler was called with;
@@ -112,3 +113,40 @@ const trackedDiv1 = <D2 trackClick="foo" />; // OK
 const trackedDiv2 = <D2 trackClick={{ feature: 'bar', attributes: 123 }} />; // OK
 const trackedDiv3 = <D2 trackClick={{ attributes: 123 }} />; // Type Error
 ```
+
+In the examples above the breadcrumbs property will be an empty array since no `<Breadcrumbs />` were provided. You can wrap any parent component with `<Breadcrumbs />` to provide a list of breadcrumbs to the event handler. This can be used to know which section of a page a Checkbox was toggled or a link was clicked. For example:
+
+```tsx
+const App = () => {
+  return (
+    <>
+      <Breadcrumb name="header">
+        <Header />
+      </Breadcrumb>
+      <Breadcrumb name="layout">
+        <Layout />
+      </Breadcrumb>
+    </>
+  );
+};
+
+const Layout = () => {
+  return (
+    <div>
+      <Breadcrumb crumb="section1">
+        <Section1 />
+      </Breadcrumb>
+      <Breadcrumb crumb="section2">
+        <Section2 />
+      </Breadcrumb>
+      <Breadcrumb crumb="section3">
+        <Section3 />
+      </Breadcrumb>
+    </div>
+  );
+};
+
+const Section2 = () => <tracked.div trackClick>Tracked</tracked.div>;
+```
+
+The `tracked.div` will have `['layout', 'section2']` as the breadcrumb value.

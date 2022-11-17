@@ -150,6 +150,44 @@ describe('always track', () => {
   });
 });
 
+describe('breadcrumbs', () => {
+  test('single', () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Breadcrumb = trackElement.Breadcrumb;
+    const Div = trackElement.intrinsicElements.div;
+    const { container } = render(
+      <Breadcrumb crumb="c1">
+        <Div trackClick>Test</Div>
+      </Breadcrumb>
+    );
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ breadcrumbs: ['c1'] })
+    );
+  });
+
+  test('multi', () => {
+    const spy = jest.fn();
+    const trackElement = createTracker(spy);
+    const Breadcrumb = trackElement.Breadcrumb;
+    const Div = trackElement.intrinsicElements.div;
+    const { container } = render(
+      <Breadcrumb crumb="c1">
+        <Breadcrumb crumb="c2">
+          <Breadcrumb crumb="c3">
+            <Div trackClick>Test</Div>
+          </Breadcrumb>
+        </Breadcrumb>
+      </Breadcrumb>
+    );
+    (container.firstElementChild as HTMLDivElement)?.click();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ breadcrumbs: ['c1', 'c2', 'c3'] })
+    );
+  });
+});
+
 test('typings work', () => {
   const trackUntyped = createTracker(() => {});
   const trackTyped = createTracker<'tYpEd'>(() => {});
@@ -290,6 +328,17 @@ test('typings work', () => {
       track_loaded={(map) => (map.is === 'a map' ? 'tYpEd' : 'tYpEd')}
     />
   );
+
+  const typedCrumb = createTracker<'tYpEd', 'TyPeD'>(() => {});
+  const Div = typedCrumb.withOptions({ alwaysTrack: ['onClick'] }).div;
+  const Breadcrumb = typedCrumb.Breadcrumb;
+  // @ts-expect-error
+  element = <Breadcrumb />;
+  // @ts-expect-error
+  element = <Breadcrumb crumb="nope" children={<div />} />;
+
+  element = <Breadcrumb crumb="TyPeD" children={<div />} />;
+  element = <Breadcrumb crumb="TyPeD" children={<Div trackClick="tYpEd" />} />;
 
   if (element) void undefined; // Get rid of lint error
 });

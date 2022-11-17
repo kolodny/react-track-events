@@ -1,6 +1,6 @@
 {
   "name": "react-track-events",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Track all events on an element",
   "main": "index.js",
   "scripts": {
